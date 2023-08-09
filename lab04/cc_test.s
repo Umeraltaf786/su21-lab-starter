@@ -1,4 +1,4 @@
-.globl simple_fn naive_pow inc_arr
+.globl simple_fn naive_pow inc_arr 
 
 .data
 failure_message: .asciiz "Test failed for some reason.\n"
@@ -16,6 +16,7 @@ main:
     # convention was broken by one of these functions
     li s0, 2623
     li s1, 2910
+    
     # ... skipping middle registers so the file isn't too long
     # If we wanted to be rigorous, we would add checks for
     # s2-s20 as well
@@ -28,6 +29,7 @@ main:
     # naive_pow: should return 2 ** 7 = 128
     li a0, 2
     li a1, 7
+    
     jal naive_pow
     li t0, 128
     bne a0, t0, failure
@@ -55,6 +57,7 @@ main:
 # FIXME Fix the reported error in this function (you can delete lines
 # if necessary, as long as the function still returns 1 in a0).
 simple_fn:
+add t0,x0,x0
     mv a0, t0
     li a0, 1
     ret
@@ -77,16 +80,22 @@ simple_fn:
 naive_pow:
     # BEGIN PROLOGUE
     # END PROLOGUE
-    li s0, 1
+    addi sp,sp,-4
+      sw s0,0(sp)
+     li s0, 1
+ 
 naive_pow_loop:
     beq a1, zero, naive_pow_end
     mul s0, s0, a0
     addi a1, a1, -1
     j naive_pow_loop
 naive_pow_end:
+    
     mv a0, s0
     # BEGIN EPILOGUE
     # END EPILOGUE
+    lw s0,0(sp)
+    addi sp,sp,4
     ret
 
 # Increments the elements of an array in-place.
@@ -100,8 +109,11 @@ inc_arr:
     #
     # FIXME What other registers need to be saved?
     #
-    addi sp, sp, -4
-    sw ra, 0(sp)
+    addi sp, sp, -16
+   sw s0,4(sp)
+   sw s1,8(sp)
+   sw ra, 0(sp)
+   
     # END PROLOGUE
     mv s0, a0 # Copy start of array to saved register
     mv s1, a1 # Copy length of array to saved register
@@ -112,18 +124,23 @@ inc_arr_loop:
     add a0, s0, t1 # Add offset to start of array
     # Prepare to call helper_fn
     #
+    sw t0,12(sp)
     # FIXME Add code to preserve the value in t0 before we call helper_fn
     # Hint: What does the "t" in "t0" stand for?
     # Also ask yourself this: why don't we need to preserve t1?
     #
     jal helper_fn
     # Finished call for helper_fn
+    lw t0,12(sp)
+    
     addi t0, t0, 1 # Increment counter
     j inc_arr_loop
 inc_arr_end:
     # BEGIN EPILOGUE
-    lw ra, 0(sp)
-    addi sp, sp, 4
+       lw s0,4(sp)
+   lw s1,8(sp)
+   lw ra, 0(sp)
+    addi sp, sp, 16
     # END EPILOGUE
     ret
 
@@ -137,11 +154,15 @@ inc_arr_end:
 # as appropriate.
 helper_fn:
     # BEGIN PROLOGUE
+    addi sp,sp,-4
+    sw s0,0(sp)
     # END PROLOGUE
     lw t1, 0(a0)
     addi s0, t1, 1
     sw s0, 0(a0)
     # BEGIN EPILOGUE
+    lw s0,0(sp)
+    addi sp,sp,4
     # END EPILOGUE
     ret
 
